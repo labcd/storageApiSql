@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8" />
+        <meta name="format-detection" content="telephone=no" />
+        <meta name="viewport" content="user-scalable=no, initial-scale=1, maximum-scale=1, minimum-scale=1, width=device-width, height=device-height, target-densitydpi=device-dpi" />
+        <link rel="stylesheet" type="text/css" href="css/index.css" />
+        <title>Storage Api WebSQL CRUD example</title>
+    </head>
+    <body onload="init()">
+        <div class="app">
+            <h1>Taking Notes</h1>
+            <div>
+                <p>My Notes</p>
+                <p id="listing"></p>
+                <p><a href="#" onClick="createNote();">Create Note</a></p>
+            </div>
+        </div>
+        
+        <script type="text/javascript" src="phonegap.js"></script>
+        <script type="text/javascript">
+            
+            function init(){
+                document.addEventListener("deviceready", onDeviceReady, false);
+            }            
+
+            function onDeviceReady() {
+                readNotes();
+            }
+
+            function createNote() {
+
+                // generate a random string
+                var str = Math.random().toString(36).substring(7);
+
+                // connect to the database
+                var db = window.openDatabase("notes", "1.0", "notes", 1000000);
+                
+                // add note
+                db.transaction(
+                    function(tx){
+                        tx.executeSql('CREATE TABLE IF NOT EXISTS NOTES (id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, note TEXT)');
+                        tx.executeSql('INSERT INTO NOTES (note) VALUES ("' + str + '")');
+                    },
+                    onErrorCallback,
+                    readNotes); // update listing
+            }
+
+            function readNotes() {                
+
+                // connect to the database
+                var db = window.openDatabase("notes", "1.0", "notes", 1000000);
+
+                // read notes
+                db.transaction(function(tx) {
+                    tx.executeSql('SELECT * FROM NOTES', [], updateListing, onErrorCallback);
+                });
+
+                function updateListing(tx, results) {
+                    
+                    var element = document.getElementById('listing');
+                    var output = '';
+
+                    for(var i = 0; i < results.rows.length; i++) {
+                        output += '<li>';
+                        output += results.rows.item(i).id + ' ' + results.rows.item(i).note;
+                        output += ' | <a href="#" onClick="updateNote(' + results.rows.item(i).id + ');">update</a> ';
+                        output += ' | <a href="#" onClick="deleteNote(' + results.rows.item(i).id + ');">delete</a> ';
+                        output += '</li>';
+                    }
+
+                    element.innerHTML = output;
+
+                }
+
+            }
+
+            function updateNote(id) {
+
+                // generate a random string
+                var str = Math.random().toString(36).substring(7);
+
+                 // connect to the database
+                var db = window.openDatabase("notes", "1.0", "notes", 1000000);
+
+                // update note
+                db.transaction(
+                    function(tx){
+                        tx.executeSql('UPDATE NOTES SET note = "' + str + '" WHERE id = ' + id);
+                    },
+                    onErrorCallback,
+                    readNotes); // update listing
+
+            }
+
+
+            function deleteNote(id) {
+
+                // connect to the database
+                var db = window.openDatabase("notes", "1.0", "notes", 1000000);
+
+                // delete note
+                db.transaction(
+                    function(tx){
+                        tx.executeSql('DELETE FROM NOTES WHERE id = ' + id);
+                    },
+                    onErrorCallback,
+                    readNotes); // update listing
+            }
+
+            // generic success callback
+            function onSuccessCallback() {
+                alert("Nothing to see here, move along!");
+            }
+
+            // generic error callback
+            function onErrorCallback(error){
+                alert("Error " + error.code);
+                console.log(error);
+            }
+            
+
+        </script>
+    </body>
+</html>
